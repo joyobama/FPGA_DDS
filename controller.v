@@ -20,7 +20,7 @@ module controller(clk,rst,MREST,DRCTL,DRHOLD,DROVER,OSK,SYNCIO,SDIO,SDO,SCLK,CS,
   wire[31:0] wr_out;
   /*********/
   assign rom_clk = ~clk;
-  ROM m1(rom_clk,PC,rom_out);
+  ROM_behavior m1(rom_clk,PC,rom_out);
   wr_cmd m2(wr_start,rst,clk,order,data,wr_out,wr_done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYNC_CLK);
   /*********/
   /** DRCTL ***/
