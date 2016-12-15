@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
-module spi_interface(clk,rst,in,out,start,SCLK,MISO,MOSI,CS);
-	input clk,start,rst,MISO;  // posedge rst is not necessary,it can just stay low
+module spi_interface(clk,in,out,start,SCLK,MISO,MOSI,CS);
+	input clk,start,MISO; 
 	input[7:0] in;
 	output MOSI,SCLK,CS;
 	output[7:0] out;
@@ -17,22 +17,13 @@ module spi_interface(clk,rst,in,out,start,SCLK,MISO,MOSI,CS);
 	assign SCLK = CLK_DIV_REG[CLK_DIV-1];
 	assign MOSI = T[7];
 	//divide input clock
-	always@(posedge inter_clk or posedge start or posedge rst)
-		if(start || rst)
+	always@(posedge inter_clk or posedge start)
+		if(start)
 			CLK_DIV_REG <= 0;
 		else
 			CLK_DIV_REG <= CLK_DIV_REG+1;
-	/*  master state
-	* state = 0 free or write or read finish
-	* state = 2^i  the i-th bit is ready to read or write
-	* after the last bit is read or write half clock circle the CS becomes high from low 
-	*/
-	always@(negedge SCLK or posedge start or posedge rst)
-		if(rst) begin
-			state <= 8'd0;
-			CS <= 1;
-		end
-		else if(start) begin
+	always@(negedge SCLK or posedge start)
+		if(start) begin
 			state <= 8'd1;
 			CS <= 0;
 		end

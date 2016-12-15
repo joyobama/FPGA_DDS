@@ -1,5 +1,5 @@
-module wr_cmd(start,rst,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYNC_CLK);
-	input clk,rst,start,SYNC_CLK,SDO;
+module wr_cmd(start,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYNC_CLK);
+	input clk,start,SYNC_CLK,SDO;
 	input[7:0] addr;
 	input[31:0] din;
 	output[31:0] dout;
@@ -22,7 +22,6 @@ module wr_cmd(start,rst,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE
 	.in(cmd_addr),
 	.SCLK(SCLK),
 	.start(spi_start),
-	.rst(rst),
 	.MOSI(SDIO),
 	.CS(CS),
 	.MISO(SDO),
@@ -41,27 +40,20 @@ module wr_cmd(start,rst,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE
 		end
 	/*******************************************/
 	assign inter_sync_clk = SYNC_CLK | update_done;
-	always@(posedge inter_sync_clk or posedge rst or posedge start)
-		if(rst || start)
+	always@(posedge inter_sync_clk or posedge start)
+		if(start)
 			IO_UPDATE <= 0;
 		else
 			if(update_en)
 				IO_UPDATE <= ~IO_UPDATE;
-	always@(negedge IO_UPDATE or posedge rst or posedge start)
-		if(rst || start)
+	always@(negedge IO_UPDATE or posedge start)
+		if(start)
 			update_done <= 0;
 		else
 			update_done <= 1;
 	/*******************************************/
-	always@(posedge clk or posedge start or posedge rst)
-		if(rst) begin    // idle  
-			spi_start <= 0;
-			state <= 3'd0;
-			done <= 1;
-			SYNCIO <= 0;
-			update_en <=0;
-		end
-		else if(start) begin	// ready to start
+	always@(posedge clk or posedge start)
+		if(start) begin	// ready to start
 			update_en <= 0;
 			spi_start <= 0;
 			wr_cnt <= 4'd0;
