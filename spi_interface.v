@@ -1,3 +1,4 @@
+/* charset = ascii */
 `timescale 1ns / 1ps
 module spi_interface(clk,in,out,start,SCLK,MISO,MOSI,CS);
 	input clk,start,MISO; 

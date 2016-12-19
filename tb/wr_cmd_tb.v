@@ -1,3 +1,4 @@
+/* charset = ascii */
 `timescale 1ns / 1ps
 module cmd_write_tb;
   // input 

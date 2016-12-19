@@ -1,5 +1,5 @@
+/* charset = ascii */
 `timescale 1ns / 1ps
-
 module spi_write_tb;
 	reg clk;
 	reg [7:0] send_data;

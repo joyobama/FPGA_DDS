@@ -1,3 +1,4 @@
+/* charset = ascii */
 module wr_cmd(start,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYNC_CLK);
 	input clk,start,SYNC_CLK,SDO;
 	input[7:0] addr;
@@ -27,7 +28,6 @@ module wr_cmd(start,clk,addr,din,dout,done,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYN
 	.MISO(SDO),
 	.out(spi_out));
 	
-
 	always@(posedge CS or posedge start)
 		if(start) begin
 			cmd_addr <= addr;
