@@ -1,4 +1,4 @@
-/* charset = ascii */
+/* charset = ascii */	
 module ROM_behavior(clk,addr,dout,done);
   input clk;
   input [7:0] addr;
