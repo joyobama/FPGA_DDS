@@ -1,11 +1,11 @@
-`timescale 1ns / 1ps
+/** charset = ascii **/
 module uart_tx(bclk, rst, tx_din, start, tx_done, TX);
 	input  bclk,rst,start;
 	input  [7:0] tx_din;
 	output tx_done,TX;
 	reg TX = 1;
 	reg tx_done = 1;
-	/** 内部寄存器 **/
+	/** internal registers **/
 	reg[7:0] data_t;
 	reg[3:0] cnt;
 	reg[3:0] dcnt;
@@ -35,9 +35,11 @@ module uart_tx(bclk, rst, tx_din, start, tx_done, TX);
 				end
 				1'b1: begin
 					cnt <= cnt+1;
-					if(dcnt == 4'b1001 && cnt == 4'b1110)   //结束位提前一个bclk返回
+					if(dcnt == 4'b1001 && cnt == 4'b1110) begin 
+						tx_done <= 1;
 						state <= 1'b0;
-					else if(cnt == 4'b1111) begin			//计数满16个bclk
+					end
+					else if(cnt == 4'b1111) begin			     
 						{data_t,TX} <= {1'b1,data_t};
 						dcnt <= dcnt+1;
 					end
