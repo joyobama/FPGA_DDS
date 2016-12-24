@@ -19,12 +19,21 @@ module controller(clk,rst,DROVER,DRCTL,DRHOLD,OSK,MREST,
   assign wr_data = data;
   assign mem_addr = PC;
   /** DRCTL ***/
-  assign DRCTL = (auto_flip_en & DRCTL_DELAY_REG[0]) | (~auto_flip_en & set_drctl);
-  always@(posedge clk)
-    if(DROVER)
-      DRCTL_DELAY_REG <= {DRCTL_DELAY_REG,~DRCTL_DELAY_REG[N-1]};
-    else
-      DRCTL_DELAY_REG <= 0;
+  reg st_drctl = 0;
+  assign DRCTL = auto_flip_en?DRCTL_DELAY_REG[0]:set_drctl;
+  always@(posedge clk or posedge DROVER)
+	if(~st_drctl) 
+		if(DROVER) begin
+			st_drctl <= 1;
+			DRCTL_DELAY_REG <= {DRCTL_DELAY_REG,1'b1}[N-1:0];
+		end
+		else
+			DRCTL_DELAY_REG <= 0;
+	else begin
+		DRCTL_DELAY_REG <= {DRCTL_DELAY_REG,1'b1}[N-1:0];
+		if(DRCTL_DELAY_REG[N-1] && ~DROVER)
+			st_drctl <= 0;
+	end
   /** Ö÷×´Ì¬»ú **/
   always@(posedge clk or posedge rst)
     if(rst) begin
