@@ -5,12 +5,12 @@ module spi_interface(clk,in,out,start,SCLK,MISO,MOSI,CS);
 	input[7:0] in;
 	output MOSI,SCLK,CS;
 	output[7:0] out;
-	
-	parameter CLK_DIV = 2;
-	
-	reg [7:0] T,R,state;
-	reg [CLK_DIV-1:0] CLK_DIV_REG;
 	reg CS;
+	/** 内部寄存器 **/
+	parameter CLK_DIV = 2;
+	reg [7:0] T,R;
+	reg [7:0] state = 8'd0;
+	reg [CLK_DIV-1:0] CLK_DIV_REG;
 	wire inter_clk;
 	
 	assign inter_clk = clk & (~CS);

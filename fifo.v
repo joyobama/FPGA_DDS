@@ -11,7 +11,7 @@ module fifo(clk,read_clk,write_clk,din,read_done,write_done,dout);
 	(*KEEP="TRUE"*)reg[6:0] read_addr = 7'd0  		/* synthesis preserve */;
 	(*KEEP="TRUE"*)reg[7:0] read_data,write_data 	/* synthesis preserve */;
 	(*KEEP="TRUE"*)reg[7:0] ram[0:127] 				/* synthesis preserve */;
-	(*KEEP="TRUE"*)wire     read_en,write_en 		/* synthesis keep */;
+	(*KEEP="TRUE"*)wire     fifo_empty,fifo_full 	/* synthesis keep */;
 	(*KEEP="TRUE"*)reg      read_flag = 0 			/* synthesis preserve */;
 	(*KEEP="TRUE"*)reg      write_flag = 0 			/* synthesis preserve */;
 	(*KEEP="TRUE"*)reg 		write_state = 0			/* synthesis preserve */;
@@ -21,8 +21,8 @@ module fifo(clk,read_clk,write_clk,din,read_done,write_done,dout);
 	
 	wire [6:0] tmp;   // tmp = write_addr+1
 	assign tmp = write_addr + 7'd1;
-	assign read_en = ~(read_addr==write_addr);
-	assign write_en = ~(tmp==read_addr);
+	assign fifo_empty = read_addr==write_addr;
+	assign fifo_full = tmp==read_addr;
 	assign dout = read_data;
 	
 	// read
@@ -39,7 +39,7 @@ module fifo(clk,read_clk,write_clk,din,read_done,write_done,dout);
 			rst_read_flag <= 0;
 		end
 		else 
-			if(read_en) begin
+			if(~fifo_empty) begin
 				read_data <= ram[read_addr];
 				read_addr <= read_addr+1; // notice !!
 				read_state <= 0;
@@ -61,7 +61,7 @@ module fifo(clk,read_clk,write_clk,din,read_done,write_done,dout);
 			rst_write_flag <= 0;
 		end
 		else
-			if(write_en) begin
+			if(~fifo_full) begin
 				ram[write_addr] <= write_data;
 				write_addr <= write_addr+1; // notice !!
 				write_state <= 0;
