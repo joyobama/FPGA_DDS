@@ -4,13 +4,11 @@ module spi_write_tb;
 	reg clk;
 	reg [7:0] send_data;
 	reg start;
-	reg rst;
 	wire SCLK;
 	wire MOSI;
 	wire CS;
 	// Instantiate the Unit Under Test (UUT)
 	spi_interface uut (
-		.rst(rst),
 		.clk(clk), 
 		.in(send_data), 
 		.start(start), 
@@ -23,11 +21,6 @@ module spi_write_tb;
 		clk = 0;
 		send_data = 8'b1001_0011;
 		start = 0;
-		rst = 0;
-//		#3
-//		rst = 1;
-//		#3
-//		rst = 0;
 		#100;
       start = 1;
 		#50
@@ -37,7 +30,6 @@ module spi_write_tb;
 endmodule
 module spi_read_tb;
 	reg clk;
-	reg rst;
 	reg [7:0] slaver_data;
 	reg start;
 	wire [7:0] read_data;
@@ -45,7 +37,6 @@ module spi_read_tb;
 	wire CS;
 	// Instantiate the Unit Under Test (UUT)
 	spi_interface uut (
-		.rst(rst),
 		.clk(clk), 
 		.start(start), 
 		.SCLK(SCLK), 
@@ -56,7 +47,6 @@ module spi_read_tb;
 
 	initial begin
 		clk = 0;
-		rst = 0;
 		start = 0;
 		#100;
       start = 1;

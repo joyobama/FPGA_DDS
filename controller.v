@@ -6,28 +6,29 @@ module controller(clk,rst,
 	input clk,rst,DROVER,wr_done,mem_done;
 	input[7:0] mem_dout;
 	input[31:0] wr_dout;
-	output DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,wr_start,mem_rclk,mem_wclk;
+	output DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,wr_start,mem_rclk,mem_wclk;
 	output[7:0] wr_addr,mem_din;
 	output[31:0] wr_din;
-	reg DRHOLD,DRCTL,OSK,MREST,EPD,PS0,PS1,PS2,DREOR;
+	reg DRHOLD,DRCTL,OSK,MREST,EPD,PS0,PS1,PS2;
 	reg mem_rclk = 0;  /** wr_start,mem_rclk,mem_wclk 空闲和初始情况下全部为0 **/
 	reg mem_wclk = 0;
 	reg wr_start = 0;
 	reg DREOR = 0;
 	/**内部寄存器**/
-	reg[1:0] exec_cnt; // execute 状态下消耗的clk计数器
+	reg[2:0] exec_cnt; // execute 状态下消耗的clk计数器
 	reg[7:0] order;
 	reg[31:0] data;
 	assign wr_addr = order;
 	assign wr_din = data;
 	assign mem_din = data[31:24];
-	reg[1:0] state = 0;
+	reg[2:0] state = 0;
 	reg[2:0] mem_cnt;  /** 每次读/写的字节数 **/
 
-	parameter fetch = 2'b00;
-	parameter execute = 2'b01;
-	parameter read_mem = 2'b10;
-	parameter write_mem = 2'b11;
+	parameter fetch = 3'b000;
+	parameter execute = 3'b001;
+	parameter wr_dds_regs = 3'b010;
+	parameter read_mem = 3'b011;
+	parameter write_mem = 3'b100;
 
 	/** DRCTL **/
 	reg state_drctl = 0;
@@ -81,7 +82,7 @@ module controller(clk,rst,
 			else
 				mem_rclk <= 1;
 		execute: begin
-			exec_cnt <= {exec_cnt[0],1'b1};
+			exec_cnt <= {exec_cnt[1:0],1'b1};
 			if(order[6]) // 自定义FPGA操作
 			
 				if(order[4]) begin				/* order = x1x1_????  设置OSK,PS2,PS1,PS0 */
@@ -101,7 +102,7 @@ module controller(clk,rst,
 					state <= fetch;
 				end
 				else if(order[0])				/* order = x1x0_0001  FPGA延时0-65536个clk */
-					if(exec_cnt == 2'd0) begin
+					if(exec_cnt == 3'd0) begin
 						data <= 32'd0;
 						state <= read_mem;
 						mem_cnt <= 3'd2;
@@ -115,31 +116,37 @@ module controller(clk,rst,
 			else
 				if(order[7])  
 				/***  读DDS寄存器 ***/
-					if(exec_cnt == 2'd0)
+					if(exec_cnt == 3'd0)
 						wr_start <= 1;
-					else if(exec_cnt == 2'd1) begin
+					else if(exec_cnt == 3'd1) begin
 						wr_start <= 0;
-						if(wr_done) begin
-							data <= wr_dout;
-							state <= mem_wclk;
-							mem_cnt <= 3'd4;
-						end
+						state <= wr_dds_regs;
+					end
+					else if(exec_cnt == 3'd3) begin
+						data <= wr_dout;
+						state <= write_mem;
+						mem_cnt <= 3'd4;
 					end
 					else
 						state <= fetch;
 				/***  写DDS寄存器 ***/
 				else 
-					if(exec_cnt == 2'd0) begin
+					if(exec_cnt == 3'd0) begin
 						mem_cnt <= 3'd4;
-						state <= mem_rclk;
+						state <= read_mem;
 					end
-					else if(exec_cnt == 2'd1)
+					else if(exec_cnt == 3'd1)
 					  wr_start <= 1;
-					else begin
+					else if(exec_cnt == 3'd2) begin
 					  wr_start <= 0;
-					  if(wr_done) state <= fetch;
+					  state <= wr_dds_regs;
 					end
+					else
+						state <= fetch;
 		end
+		wr_dds_regs :
+			if(wr_done)
+				state <= execute;
 		read_mem : 
 			if(mem_cnt==3'd0) begin
 				state <= execute;

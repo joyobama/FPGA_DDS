@@ -8,8 +8,8 @@ module  half_int_div(clock,rst,clk_out);
 	parameter F_DIV_WIDTH = 16; 	//分频计数器宽度
 
 	//内部寄存器
-	reg	clk_out;					
-	reg[F_DIV_WIDTH - 1:0] count_p;
+	reg	clk_out = 0;					
+	reg[F_DIV_WIDTH - 1:0] count_p = 0;
 	reg flag;				
 	wire clk_in;					//处理后的内部时钟
 	wire full_div_p;				//上升沿计数满标志
