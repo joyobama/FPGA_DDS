@@ -6,15 +6,15 @@ module spi_write_tb;
 	reg start;
 	wire SCLK;
 	wire MOSI;
-	wire CS;
+	wire spi_done;
 	// Instantiate the Unit Under Test (UUT)
 	spi_interface uut (
 		.clk(clk), 
-		.in(send_data), 
+		.din(send_data), 
 		.start(start), 
 		.SCLK(SCLK), 
 		.MOSI(MOSI),
-		.CS(CS)
+		.done(spi_done)
 	);
 
 	initial begin
@@ -34,15 +34,15 @@ module spi_read_tb;
 	reg start;
 	wire [7:0] read_data;
 	wire SCLK;
-	wire CS;
+	wire spi_done;
 	// Instantiate the Unit Under Test (UUT)
 	spi_interface uut (
 		.clk(clk), 
 		.start(start), 
 		.SCLK(SCLK), 
 		.MISO(slaver_data[7]),
-		.CS(CS),
-		.out(read_data)
+		.done(spi_done),
+		.dout(read_data)
 	);
 
 	initial begin
@@ -57,7 +57,7 @@ module spi_read_tb;
 	always #5 clk = ~clk;
 	// slaver behavior
 	always @(negedge SCLK)
-		if(~CS)
+		if(~spi_done)
 			slaver_data <= {slaver_data[6:0],1'b0};
 	
 endmodule

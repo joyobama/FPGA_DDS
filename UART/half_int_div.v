@@ -1,10 +1,11 @@
 /* charset = ascii */
+`include "config.v"
 module  half_int_div(clock,rst,clk_out);
 	input rst;
 	input	clock;					//输入时钟
 	output	clk_out;				//输出时钟
-	parameter F_DIV = 326;			//分频系数<<<<-----调整波特率修改这里
-	parameter HALF  = 1;         //分频系数(半整数)
+	parameter F_DIV = `BAUD_DIV;			
+	parameter HALF  = `BAUD_DIV_HALF;         
 	parameter F_DIV_WIDTH = 16; 	//分频计数器宽度
 
 	//内部寄存器

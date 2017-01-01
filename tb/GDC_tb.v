@@ -3,16 +3,14 @@ module GDC_tb;
 	reg clk = 0;
 	reg rst = 0;
 	reg SDO = 0;
-	reg SYNC_CLK = 0;
 	reg uart_en = 0;
 	wire RX,TX,SYNCIO,SDIO,SCLK,CS,IO_UPDATE,DROVER,DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,rx_done,tx_done;
 	wire[7:0] rx_data;
 	always #10 clk = ~clk;
 	always@(negedge clk)
 		SDO <= {$random}%2;
-	always #({$random}%10+5) SYNC_CLK <= ~SYNC_CLK;
 	
-	parameter N = 1;
+	parameter N = 5;
 	reg tx_start = 0;
 	reg[3:0] rx_cnt = 0;
 	reg[3:0] tx_cnt = 0;
@@ -21,7 +19,11 @@ module GDC_tb;
 	reg[7:0] tx_datas[0:16];
 	
 	initial begin
-		tx_datas[0] = 8'b1000_0000;
+		tx_datas[0] = 8'b0000_0110;
+		tx_datas[1] = {$random}%256;
+		tx_datas[2] = {$random}%256;
+		tx_datas[3] = {$random}%256;
+		tx_datas[4] = {$random}%256;
 		#5 rst = 1;
 		uart_en = 1;
 	end
@@ -45,8 +47,10 @@ module GDC_tb;
 			else
 				tx_start <= 0;
 	end
-	GDC m1(clk,rst,ut_TX,ut_RX,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,SYNC_CLK,DROVER,DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR);
+	GDC m1(clk,rst,ut_TX,ut_RX,SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,DROVER,DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR);
+	//    (clk,rst,RX,   TX,   SYNCIO,SDIO,SDO,SCLK,CS,IO_UPDATE,DROVER,DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR);
 	uart m2(clk,rst,tx_start,rx_done,tx_done,rx_data,tx_data,ut_RX,ut_TX);
+	//     (clk,rst,tx_start,rx_done,tx_done,rx_data,tx_data,RX,   TX   );
 endmodule		
 			
 	

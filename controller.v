@@ -1,15 +1,16 @@
 /* charset = utf-8 */
-module controller(clk,rst,
-				DROVER,DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,	/* controller直接控制的外部信号 */
-				wr_start,wr_addr,wr_din,wr_done,wr_dout,				/* wr_cmd模块的接口 */
-				mem_dout,mem_din,mem_rclk,mem_wclk,mem_done);			/* 存储器(可以是fifo,ram,rom)的接口 */
+`include "config.v"
+module controller(clk,rst,DROVER,
+				DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,IO_UPDATE,		/* controller直接控制的外部信号 */
+				wr_start,wr_addr,wr_din,wr_done,wr_dout,					/* wr_cmd模块的接口 */
+				mem_dout,mem_din,mem_rclk,mem_wclk,mem_done);				/* 存储器(可以是fifo,ram,rom)的接口 */
 	input clk,rst,DROVER,wr_done,mem_done;
 	input[7:0] mem_dout;
 	input[31:0] wr_dout;
-	output DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,wr_start,mem_rclk,mem_wclk;
+	output DRCTL,DRHOLD,OSK,MREST,EPD,PS0,PS1,PS2,DREOR,IO_UPDATE,wr_start,mem_rclk,mem_wclk;
 	output[7:0] wr_addr,mem_din;
 	output[31:0] wr_din;
-	reg DRHOLD,DRCTL,OSK,MREST,EPD,PS0,PS1,PS2;
+	reg DRHOLD,DRCTL,OSK,MREST,IO_UPDATE,EPD,PS0,PS1,PS2;
 	reg mem_rclk = 0;  /** wr_start,mem_rclk,mem_wclk 空闲和初始情况下全部为0 **/
 	reg mem_wclk = 0;
 	reg wr_start = 0;
@@ -30,15 +31,15 @@ module controller(clk,rst,
 	parameter read_mem = 3'b011;
 	parameter write_mem = 3'b100;
 
-	/** DRCTL **/
+	/********* --DRCTL-- ***********/
 	reg state_drctl = 0;
 	reg auto_flip_en = 0;
 	reg set_drctl = 0;
-	reg auto_flip_ini,auto_value;
-	parameter DELAY_INI = 20;    //drctl自动翻转时保持的clk周期数 <<<<<-----修改这里
+	reg auto_value;
+	parameter DELAY_INI = `DRCTL_PULSE_WIDTH;    
 	reg[8:0] delay_cnt;
 	always@(posedge clk)
-	DRCTL <= auto_flip_en?auto_value:set_drctl;
+		DRCTL <= auto_flip_en?auto_value:set_drctl;
 	always@(posedge clk or negedge rst)
 	if(~rst) begin
 		DREOR <= 0;
@@ -48,19 +49,19 @@ module controller(clk,rst,
 		if(DROVER) begin
 			state_drctl <= 1;
 			delay_cnt <= DELAY_INI;
-			auto_value <= ~auto_flip_ini;
+			auto_value <= ~set_drctl;
 		end
 		else
-			auto_value <= auto_flip_ini;
+			auto_value <= set_drctl;
 	else begin
 		delay_cnt <= delay_cnt+8'd255;
 		if(delay_cnt==8'd0) begin
 			DREOR <= DROVER;
 			state_drctl <= 0;
-			auto_value <= auto_flip_ini;
+			auto_value <= set_drctl;
 		end
 	end
-	/** --END-- **/
+	/********* --END-- *************/
 
 	/** 主状态机 **/
 	always@(posedge clk or negedge rst)
@@ -84,24 +85,24 @@ module controller(clk,rst,
 		execute: begin
 			exec_cnt <= {exec_cnt[1:0],1'b1};
 			if(order[6]) // 自定义FPGA操作
-			
-				if(order[4]) begin				/* order = x1x1_????  设置OSK,PS2,PS1,PS0 */
-					{OSK,PS2,PS1,PS0} <= order[3:0];
+				
+				if(order[4]) begin				/* order = x1x1_????  设置OSK,EPD,DRHOLD,IO_UPDATE电平*/
+					{OSK,EPD,DRHOLD,IO_UPDATE} <= order[3:0];
+					state <= fetch;
+				end 
+				else if(order[3]) begin			/* order = x100_1???  设置 PS2,PS1,PS0 */
+					{PS2,PS1,PS0} <= order[2:0];
 					state <= fetch;
 				end
-				else if(order[3]) begin			/* order = x1x0_1???  设置DRCTL */
-					{auto_flip_en,auto_flip_ini,set_drctl} <= order[2:0];
+				else if(order[2]) begin			/* order = x100_01??  设置DRCTL */
+					{auto_flip_en,set_drctl} <= order[1:0];
 					state <= fetch;
 				end
-				else if(order[2]) begin			/* order = x1x0_01??  设置EPD,DRHOLD电平 */
-					{EPD,DRHOLD} <= order[1:0];
-					state <= fetch;
-				end
-				else if(order[1]) begin   		/* order = x1x0_001?  设置DDS复位电平 */
+				else if(order[1]) begin   		/* order = x100_001?  设置DDS复位电平 */
 					MREST <= order[0];
 					state <= fetch;
 				end
-				else if(order[0])				/* order = x1x0_0001  FPGA延时0-65536个clk */
+				else if(order[0])				/* order = x100_0001  FPGA延时0-65536个clk */
 					if(exec_cnt == 3'd0) begin
 						data <= 32'd0;
 						state <= read_mem;
@@ -111,7 +112,7 @@ module controller(clk,rst,
 					  data <= data + 32'hffff_ffff;     
 					  if(data == 32'd0) state <= fetch;
 					end
-				else 						/* order = x1xx_0000  未定义操作,自动取下一个操作 */
+				else 						/* order = x100_0000  未定义操作,自动取下一个操作 */
 					state <= fetch;
 			else
 				if(order[7])  
@@ -137,7 +138,7 @@ module controller(clk,rst,
 					end
 					else if(exec_cnt == 3'd1)
 					  wr_start <= 1;
-					else if(exec_cnt == 3'd2) begin
+					else if(exec_cnt == 3'd3) begin
 					  wr_start <= 0;
 					  state <= wr_dds_regs;
 					end
